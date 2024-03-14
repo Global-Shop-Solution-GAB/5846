@@ -1,0 +1,103 @@
+Program.Sub.ScreenSU.Start
+Gui.fMain..Create
+Gui.fMain..Caption("Material Qty Calculator")
+Gui.fMain..Size(2415,2985)
+Gui.fMain..MinX(0)
+Gui.fMain..MinY(0)
+Gui.fMain..Position(0,0)
+Gui.fMain..AlwaysOnTop(True)
+Gui.fMain..BackColor(-2147483633)
+Gui.fMain..ControlBox(False)
+Gui.fMain..MaxButton(False)
+Gui.fMain..MinButton(False)
+Gui.fMain..MousePointer(0)
+Gui.fMain..Moveable(False)
+Gui.fMain..Sizeable(False)
+Gui.fMain..ShowInTaskBar(False)
+Gui.fMain.txtQtyCompleted.Create(TextBox,"",True,1215,300,0,135,495,True,0,"Arial",8,-2147483643,1)
+Gui.fMain.txtQtyCompleted.NumericOnly(2)
+Gui.fMain.lbl1.Create(Label,"Qty Completed",True,1935,255,0,105,285,True,0,"Arial",8,-2147483633,0)
+Gui.fMain.lbl2.Create(Label,"Qty Per",True,1935,255,0,105,1020,True,0,"Arial",8,-2147483633,0)
+Gui.fMain.txtQtyPer.Create(TextBox,"",True,1215,300,0,135,1230,False,0,"Arial",8,-2147483643,1)
+Gui.fMain.txtQtyPer.Locked(True)
+Gui.fMain.cmdOK.Create(Button)
+Gui.fMain.cmdOK.Size(855,375)
+Gui.fMain.cmdOK.Position(180,1935)
+Gui.fMain.cmdOK.Caption("Ok")
+Gui.fMain.cmdOK.Event(Click,cmdOK_Click)
+Gui.fMain.cmdCancel.Create(Button)
+Gui.fMain.cmdCancel.Size(855,375)
+Gui.fMain.cmdCancel.Position(1125,1935)
+Gui.fMain.cmdCancel.Caption("Cancel")
+Gui.fMain.cmdCancel.Event(Click,cmdCancel_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'JBS0075F 
+'28822 Populate
+'28823 Lot/Bin Selected
+'28831 Script 1
+'28832 Script 2
+'28833 Script 3
+'28834 LOT
+
+'000118 JOB
+'000222 SUFFIX
+'000007 PART (Router)
+'000026 REV
+'000003 SEQ (Line_Router)
+'000017 QTY
+'000262 Script 3
+
+'Using Hooks 28822 (to set caption) and 28833 (to launch screen and return calculated qty)
+
+'Set Button Caption
+Function.Intrinsic.Control.If(V.Caller.Hook,=,28822)
+	V.Passed.000262.Set("Calc Qty")
+	f.Intrinsic.Control.End
+
+Function.Intrinsic.Control.EndIf
+
+'Gather data, perform calc.
+v.Local.sSQL.Declare(string)
+v.Local.sPart.Declare(string)
+v.Local.iRet.Declare(float)
+
+Function.Intrinsic.String.GSSPartString(V.Passed.000007,V.Passed.000026,V.Local.sPart)
+f.Intrinsic.String.Build("select top 1 run_time from v_router_line a where router=(select top 1 router from v_job_header where job='{0}' and suffix='{1}') and line_router='{2}'",V.Passed.000118,V.Passed.000222,V.Passed.000003,V.Local.sSQL)
+
+f.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+f.ODBC.Connection!conx.ExecuteAndReturn(V.Local.sSQL,V.Local.iRet)
+f.ODBC.Connection!conx.Close
+
+Gui.fMain.txtQtyPer.Text(V.Local.iRet)
+
+gui.fMain..Show
+
+Program.Sub.Main.End
+
+Program.Sub.cmdOK_Click.Start
+V.Local.iCalc.Declare(float)
+V.Local.iQtyCompleted.Declare(float)
+V.Local.iQtyPer.Declare(float)
+F.Intrinsic.Math.ConvertToFloat(v.Screen.fMain!txtQtyCompleted.Text,v.Local.iQtyCompleted)
+f.Intrinsic.Math.ConvertToFloat(v.Screen.fMain!txtQtyPer.Text,v.Local.iQtyPer)
+
+f.Intrinsic.Math.Mult(V.Local.iQtyCompleted,V.Local.iQtyPer,V.Local.iCalc)
+V.Passed.000017.Set(v.Local.iCalc)
+
+f.Intrinsic.Control.End
+
+Program.Sub.cmdOK_Click.End
+
+Program.Sub.cmdCancel_Click.Start
+f.Intrinsic.Control.End
+
+Program.Sub.cmdCancel_Click.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_xxxx_GUI_LotBin_Matl_Calc.g2u$}$JWITHROW$}$1/23/2020 10:09:16 AM$}$False
+Program.Sub.Comments.End
